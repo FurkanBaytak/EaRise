@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoController extends GetxController {
@@ -11,7 +12,10 @@ class VideoController extends GetxController {
 
   Future<void> playVideo(String path) async {
     _videoPlayerController?.dispose();
-    _videoPlayerController = VideoPlayerController.asset(path);
+    final ref = FirebaseStorage.instance.ref().child(path);
+    final url = await ref.getDownloadURL();
+
+    _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(url));
     showDefaultImage.value = false;
     isButtonEnabled.value = false;
     update();

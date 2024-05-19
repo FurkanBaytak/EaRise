@@ -1,5 +1,7 @@
+import 'package:EaRise/seensound/pages/profile/signin.dart';
 import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
+import '../../seensound/pages/profile/signup.dart';
 
 class CenterNextButton extends StatefulWidget {
   final AnimationController animationController;
@@ -51,6 +53,14 @@ class _CenterNextButtonState extends State<CenterNextButton> with TickerProvider
   void dispose() {
     _startAppAnimationController.dispose();
     super.dispose();
+  }
+
+  //Page route to the sign up screen
+  void _onStartClick() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => SignInScreen()),
+    );
   }
 
   @override
@@ -127,7 +137,7 @@ class _CenterNextButtonState extends State<CenterNextButton> with TickerProvider
                             child: _signUpMoveAnimation.value > 0.7
                                 ? InkWell(
                               key: ValueKey('Start App button'),
-                              onTap: widget.onStartClick,
+                              onTap: _onStartClick,
                               child: Padding(
                                 padding: EdgeInsets.only(left: 20.0, right: 20.0), // Padding değerlerini ayarladık
                                 child: Row(
@@ -181,7 +191,12 @@ class _CenterNextButtonState extends State<CenterNextButton> with TickerProvider
                         child: _signUpMoveAnimation.value > 0.7
                             ? InkWell(
                           key: ValueKey('Sign Up button'),
-                          onTap: widget.onNextClick,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => SignUpScreen()),
+                            );
+                          },
                           child: Padding(
                             padding: EdgeInsets.only(left: 16.0, right: 16.0),
                             child: Row(

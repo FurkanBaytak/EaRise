@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "908398964305",
+    "project_id": "earise-4671d",
+    "storage_bucket": "earise-4671d.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:908398964305:android:681b3a337cfec5a2ff1270",
+        "android_client_info": {
+          "package_name": "com.example.EaRise"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-9MXriTmGqIfIjbFUWvOPF1723gYXoK8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

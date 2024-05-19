@@ -41,6 +41,10 @@ dependencies:
     share_plus: ^6.3.3
     flutter_email_sender: ^5.0.0
     url_launcher: ^6.2.6
+    google_sign_in: ^6.2.1
+    firebase_auth: ^4.19.5
+    firebase_core: ^2.31.0
+    firebase_storage: ^11.7.5
 dev_dependencies:
     flutter_test:
         sdk: flutter
@@ -60,15 +64,6 @@ flutter:
         - assets/images/
         - assets/introduction_animation/
         - assets/icons/
-        - assets/video/
-        - assets/video/merhaba.mp4
-        - assets/video/gunaydin.mp4
-        - assets/video/evet.mp4
-        - assets/video/hayir.mp4
-        - assets/video/gorusuruz.mp4
-        - assets/video/tamam.mp4
-        - assets/video/rica_ederim.mp4
-        - assets/video/default.png
         - assets/images/default.png
 
 

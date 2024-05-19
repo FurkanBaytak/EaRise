@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:video_player/video_player.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import '../../../main.dart';
 import 'package:EaRise/seensound/main_page/seensound_theme.dart';
+import '../../../main.dart';
 import 'video_controller.dart';
-import 'mic_controller.dart'; // MicController'ı import edin
+import 'mic_controller.dart';
 
 class TranslatePage extends StatefulWidget {
   const TranslatePage({Key? key, this.animationController}) : super(key: key);
@@ -27,7 +29,9 @@ class _TranslatePageState extends State<TranslatePage> with TickerProviderStateM
   final TextEditingController textEditingController = TextEditingController();
   final stt.SpeechToText speech = stt.SpeechToText();
   final VideoController videoController = Get.put(VideoController());
-  final MicController micController = Get.put(MicController()); // MicController'ı oluşturun
+  final MicController micController = Get.put(MicController());
+
+  bool hasPlayedVideo = false;
 
   @override
   void initState() {
@@ -103,9 +107,23 @@ class _TranslatePageState extends State<TranslatePage> with TickerProviderStateM
     });
   }
 
-  void _onPlayButtonPressed() {
+  void _onPlayButtonPressed() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null || (user.isAnonymous && hasPlayedVideo)) {
+      Get.snackbar(
+        'Kayıt Gerekli',
+        'Bu özelliği kullanmak için kayıt olmalısınız.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (user.isAnonymous) {
+      hasPlayedVideo = true;
+    }
+
     String text = textEditingController.text.toLowerCase();
-    // Türkçe karakter olan kelimeleri düzelt
     text = text.replaceAll('ş', 's');
     text = text.replaceAll('ı', 'i');
     text = text.replaceAll('ç', 'c');
@@ -114,26 +132,24 @@ class _TranslatePageState extends State<TranslatePage> with TickerProviderStateM
     text = text.replaceAll('ğ', 'g');
     List<String> words = text.split(' ');
 
-    _playVideoSequence(words);
+    await _playVideoSequence(words);
   }
 
   Future<void> _playVideoSequence(List<String> words) async {
-    int maxWords = 2; // Birleştirilecek maksimum kelime sayısı
+    int maxWords = 2;
     for (int i = 0; i < words.length; i++) {
       for (int j = maxWords; j > 0; j--) {
         if (i + j <= words.length) {
-          String phrase = words.sublist(i, i + j).join('_'); // Boşluk yerine alt çizgi kullanılıyor
-          String videoPath = 'assets/video/$phrase.mp4';
+          String phrase = words.sublist(i, i + j).join('_');
+          String videoPath = 'videos/$phrase.mp4';
           bool videoExists = await _videoExists(videoPath);
 
           if (videoExists) {
             print("Playing video: $videoPath");
             await videoController.playVideo(videoPath);
-            await Future.delayed(Duration(seconds: videoController.videoPlayerController!.value.duration.inSeconds + 1));
+            await Future.delayed(Duration(milliseconds: videoController.videoPlayerController!.value.duration.inMilliseconds));
             videoController.resetState();
-            await Future.delayed(Duration(seconds: 1));
-            videoController.update();
-            i += (j - 1); // Birleştirilmiş kelimelerden dolayı atlanacak index sayısı
+            i += (j - 1);
             break;
           }
         }
@@ -145,8 +161,8 @@ class _TranslatePageState extends State<TranslatePage> with TickerProviderStateM
 
   Future<bool> _videoExists(String path) async {
     try {
-      VideoPlayerController testController = VideoPlayerController.asset(path);
-      await testController.initialize();
+      final ref = FirebaseStorage.instance.ref().child(path);
+      await ref.getDownloadURL();
       return true;
     } catch (e) {
       return false;
@@ -312,7 +328,7 @@ class _TranslatePageState extends State<TranslatePage> with TickerProviderStateM
                 builder: (controller) {
                   return Container(
                     decoration: BoxDecoration(
-                      color: controller.isListening.value ? Colors.red : SeenSoundTheme.nearlyDarkBlue, // Renk değişimi
+                      color: controller.isListening.value ? Colors.red : SeenSoundTheme.nearlyDarkBlue,
                       gradient: controller.isListening.value ? null : LinearGradient(
                           colors: [
                             SeenSoundTheme.nearlyDarkBlue,
@@ -329,7 +345,7 @@ class _TranslatePageState extends State<TranslatePage> with TickerProviderStateM
                       ],
                     ),
                     child: Icon(
-                      controller.isListening.value ? Icons.mic_off : Icons.mic, // İkon değişimi
+                      controller.isListening.value ? Icons.mic_off : Icons.mic,
                       color: SeenSoundTheme.white,
                       size: 32,
                     ),
