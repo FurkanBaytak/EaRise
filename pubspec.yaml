@@ -41,13 +41,24 @@ dependencies:
     share_plus: ^6.3.3
     flutter_email_sender: ^5.0.0
     url_launcher: ^6.2.6
+    image_picker: ^1.1.1
+    shared_preferences: ^2.0.6
+    get_storage: ^2.0.3
     google_sign_in: ^6.2.1
     firebase_auth: ^4.19.5
     firebase_core: ^2.31.0
     firebase_storage: ^11.7.5
+    cloud_firestore: ^4.17.3
+
 dev_dependencies:
     flutter_test:
         sdk: flutter
+    flutter_launcher_icons: ^0.9.2
+
+flutter_icons:
+    android: true
+    ios: true
+    image_path: "assets/images/seensound_icon.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

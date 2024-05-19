@@ -1,9 +1,12 @@
-import 'package:EaRise/seensound/main_page/seensound_theme.dart';
+import 'package:EaRise/seensound/pages/profile/users_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../main_page/seensound_home.dart';
+import 'button_pages/notifications/notification_controller.dart';
+import 'package:EaRise/seensound/main_page/seensound_theme.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -14,11 +17,14 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  final NotificationController _notificationController = Get.put(NotificationController());
+  final UserController _userController = Get.put(UserController());
 
   Future<void> _signUpWithEmail() async {
     if (_passwordController.text != _confirmPasswordController.text) {
@@ -27,11 +33,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
 
     try {
-      await _auth.createUserWithEmailAndPassword(
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
+
+      await _firestore.collection('users').doc(userCredential.user!.uid).set({
+        'userType': 'loggedIn',
+      });
+
+      _userController.setUserType(UserType.loggedIn);
+
       Get.snackbar('Başarılı', 'Kayıt işlemi başarıyla tamamlandı.');
+      _notificationController.addNotification('Başarılı', 'Kayıt işlemi başarıyla tamamlandı.', false);
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => SeensoundHomeScreen()),
@@ -39,6 +53,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
     } catch (e) {
       Get.snackbar('Hata', e.toString());
+      _notificationController.addNotification('Hata', e.toString(), true);
     }
   }
 
@@ -51,8 +66,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
         idToken: googleAuth.idToken,
       );
 
-      await _auth.signInWithCredential(credential);
+      UserCredential userCredential = await _auth.signInWithCredential(credential);
+
+      await _firestore.collection('users').doc(userCredential.user!.uid).set({
+        'userType': 'loggedIn',
+      });
+
+      _userController.setUserType(UserType.loggedIn);
+
       Get.snackbar('Başarılı', 'Google ile giriş yapıldı.');
+      _notificationController.addNotification('Başarılı', 'Google ile giriş yapıldı.', false);
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => SeensoundHomeScreen()),
@@ -60,6 +83,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
     } catch (e) {
       Get.snackbar('Hata', e.toString());
+      _notificationController.addNotification('Hata', e.toString(), true);
     }
   }
 

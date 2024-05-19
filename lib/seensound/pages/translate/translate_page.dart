@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:video_player/video_player.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:EaRise/seensound/main_page/seensound_theme.dart';
 import '../../../main.dart';
+import '../profile/users_controller.dart';
 import 'video_controller.dart';
 import 'mic_controller.dart';
 
@@ -30,8 +31,7 @@ class _TranslatePageState extends State<TranslatePage> with TickerProviderStateM
   final stt.SpeechToText speech = stt.SpeechToText();
   final VideoController videoController = Get.put(VideoController());
   final MicController micController = Get.put(MicController());
-
-  bool hasPlayedVideo = false;
+  final UserController userController = Get.put(UserController());
 
   @override
   void initState() {
@@ -71,10 +71,14 @@ class _TranslatePageState extends State<TranslatePage> with TickerProviderStateM
       onStatus: (val) {
         print('onStatus: $val');
         micController.isListening.value = speech.isListening;
+        if (!speech.isListening) {
+          micController.stopTimer();
+        }
       },
       onError: (val) {
         print('onError: $val');
         micController.isListening.value = false;
+        micController.stopTimer();
       },
     );
 
@@ -83,6 +87,7 @@ class _TranslatePageState extends State<TranslatePage> with TickerProviderStateM
         speech.stop();
         print('Speech recognition is stopped');
         micController.isListening.value = false;
+        micController.stopTimer();
       } else {
         speech.listen(
           onResult: (val) {
@@ -93,35 +98,31 @@ class _TranslatePageState extends State<TranslatePage> with TickerProviderStateM
         );
         print('Speech recognition is started');
         micController.isListening.value = true;
+        micController.startTimer();
       }
     } else {
       print("The user has denied the use of speech recognition.");
       micController.isListening.value = false;
+      micController.stopTimer();
     }
   }
 
   void updateText(String text) {
-    setState(() {
-      textEditingController.text = text;
-      textEditingController.selection = TextSelection.fromPosition(TextPosition(offset: textEditingController.text.length));
-    });
+    textEditingController.text = text;
+    textEditingController.selection = TextSelection.fromPosition(TextPosition(offset: textEditingController.text.length));
   }
 
   void _onPlayButtonPressed() async {
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null || (user.isAnonymous && hasPlayedVideo)) {
+    if (!userController.canPlay()) {
       Get.snackbar(
-        'Kayıt Gerekli',
-        'Bu özelliği kullanmak için kayıt olmalısınız.',
+        'Limit Aşıldı',
+        'Belirlenen sınırı aştınız. Lütfen daha sonra tekrar deneyiniz.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
 
-    if (user.isAnonymous) {
-      hasPlayedVideo = true;
-    }
+    userController.incrementPlayCount();
 
     String text = textEditingController.text.toLowerCase();
     text = text.replaceAll('ş', 's');
@@ -170,7 +171,7 @@ class _TranslatePageState extends State<TranslatePage> with TickerProviderStateM
   }
 
   void addAllListData() {
-    const int count = 3;
+    const int count = 4;
 
     listViews.add(
       Padding(
@@ -259,6 +260,56 @@ class _TranslatePageState extends State<TranslatePage> with TickerProviderStateM
                   ),
                   child: Row(
                     children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            GetBuilder<VideoController>(
+                              builder: (_) {
+                                return InkWell(
+                                  onTap: () {
+                                    Clipboard.setData(ClipboardData(text: textEditingController.text));
+                                    Get.snackbar('Kopyalandı', 'Metin kopyalandı');
+                                  },
+                                  child: Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: SeenSoundTheme.nearlyDarkBlue,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.copy,
+                                      color: SeenSoundTheme.white,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            GetBuilder<VideoController>(
+                              builder: (_) {
+                                return InkWell(
+                                  onTap: textEditingController.clear,
+                                  child: Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.delete,
+                                      color: SeenSoundTheme.white,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.only(left: 16.0, right: 8.0),
@@ -308,6 +359,36 @@ class _TranslatePageState extends State<TranslatePage> with TickerProviderStateM
                       ),
                     ],
                   ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    listViews.add(
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: AnimatedBuilder(
+          animation: widget.animationController!,
+          builder: (BuildContext context, Widget? child) {
+            return FadeTransition(
+              opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+                  CurvedAnimation(
+                      parent: widget.animationController!,
+                      curve: Interval((1 / count) * 2, 1.0,
+                          curve: Curves.fastOutSlowIn))),
+              child: Transform(
+                transform: Matrix4.translationValues(
+                    0.0, 30 * (1.0 - topBarAnimation!.value), 0.0),
+                child: Column(
+                  children: [
+                    Obx(() => Text(
+                      'Süre: ${micController.elapsedTime.value} saniye',
+                      style: TextStyle(fontSize: 16, color: SeenSoundTheme.nearlyDarkBlue),
+                    )),
+                  ],
                 ),
               ),
             );
@@ -396,7 +477,7 @@ class _TranslatePageState extends State<TranslatePage> with TickerProviderStateM
             padding: EdgeInsets.only(
               top: AppBar().preferredSize.height +
                   MediaQuery.of(context).padding.top +
-                  60,
+                  16, // Üstteki padding'i azaltıyoruz
               bottom: MediaQuery.of(context).padding.bottom,
             ),
             itemCount: listViews.length,
@@ -433,7 +514,7 @@ class _TranslatePageState extends State<TranslatePage> with TickerProviderStateM
               child: Column(
                 children: <Widget>[
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 40.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0), // AppBar'ın padding değerini azalttık
                     child: Container(
                       height: 40,
                       decoration: BoxDecoration(
@@ -478,10 +559,9 @@ class _TranslatePageState extends State<TranslatePage> with TickerProviderStateM
                           ),
                           const SizedBox(width: 8),
                           Image.asset(
-                            'assets/icons/sign_language_icon.png',
-                            height: 24,
-                            width: 24,
-                          ),
+                              'assets/icons/sign_language_icon.png',
+                              height: 24,
+                              width: 24),
                         ],
                       ),
                     ),

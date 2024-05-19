@@ -8,10 +8,14 @@ import 'package:is_first_run/is_first_run.dart';
 import 'introduction_animation/introduction_animation_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:EaRise/seensound/main_page/seensound_home.dart';
+import 'package:get_storage/get_storage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await GetStorage.init();
   await SystemChrome.setPreferredOrientations(<DeviceOrientation>[
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown
@@ -38,6 +42,7 @@ class MyApp extends StatelessWidget {
       systemNavigationBarDividerColor: Colors.transparent,
       systemNavigationBarIconBrightness: Brightness.dark,
     ));
+
     return GetMaterialApp(
       title: 'EaRise',
       debugShowCheckedModeBanner: false,
@@ -46,8 +51,20 @@ class MyApp extends StatelessWidget {
         textTheme: AppTheme.textTheme,
         platform: TargetPlatform.iOS,
       ),
-      home: isFirstTime ? IntroductionAnimationScreen() : SignInScreen(),
+      home: _getInitialScreen(isFirstTime),
     );
+  }
+
+  Widget _getInitialScreen(bool isFirstTime) {
+    User? currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser != null && !currentUser.isAnonymous) {
+      return SeensoundHomeScreen();
+    } else if (isFirstTime) {
+      return IntroductionAnimationScreen();
+    } else {
+      return SignInScreen();
+    }
   }
 }
 

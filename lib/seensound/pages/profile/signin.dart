@@ -1,10 +1,11 @@
-import 'package:EaRise/seensound/main_page/seensound_theme.dart';
 import 'package:EaRise/seensound/pages/profile/signup.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../main_page/seensound_home.dart';
+import '../../main_page/seensound_theme.dart';
+import 'button_pages/notifications/notification_controller.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({Key? key}) : super(key: key);
@@ -18,6 +19,7 @@ class _SignInScreenState extends State<SignInScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  final NotificationController _notificationController = Get.put(NotificationController());
 
   Future<void> _signInWithEmail() async {
     try {
@@ -26,6 +28,7 @@ class _SignInScreenState extends State<SignInScreen> {
         password: _passwordController.text.trim(),
       );
       Get.snackbar('Başarılı', 'Giriş işlemi başarıyla tamamlandı.');
+      _notificationController.addNotification('Başarılı', 'Giriş işlemi başarıyla tamamlandı.', false);
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => SeensoundHomeScreen()),
@@ -33,6 +36,7 @@ class _SignInScreenState extends State<SignInScreen> {
       );
     } catch (e) {
       Get.snackbar('Hata', e.toString());
+      _notificationController.addNotification('Hata', e.toString(), true);
     }
   }
 
@@ -47,6 +51,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
       await _auth.signInWithCredential(credential);
       Get.snackbar('Başarılı', 'Google ile giriş yapıldı.');
+      _notificationController.addNotification('Başarılı', 'Google ile giriş yapıldı.', false);
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => SeensoundHomeScreen()),
@@ -54,6 +59,7 @@ class _SignInScreenState extends State<SignInScreen> {
       );
     } catch (e) {
       Get.snackbar('Hata', e.toString());
+      _notificationController.addNotification('Hata', e.toString(), true);
     }
   }
 
@@ -61,6 +67,7 @@ class _SignInScreenState extends State<SignInScreen> {
     try {
       await _auth.signInAnonymously();
       Get.snackbar('Başarılı', 'Anonim olarak giriş yapıldı.');
+      _notificationController.addNotification('Başarılı', 'Anonim olarak giriş yapıldı.', false);
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => SeensoundHomeScreen()),
@@ -68,6 +75,7 @@ class _SignInScreenState extends State<SignInScreen> {
       );
     } catch (e) {
       Get.snackbar('Hata', e.toString());
+      _notificationController.addNotification('Hata', e.toString(), true);
     }
   }
 

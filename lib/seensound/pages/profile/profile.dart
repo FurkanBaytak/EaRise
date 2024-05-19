@@ -1,5 +1,15 @@
+import 'package:EaRise/seensound/pages/profile/button_pages/account.dart';
+import 'package:EaRise/seensound/pages/profile/button_pages/notifications/notification_screen.dart';
+import 'package:EaRise/seensound/pages/profile/signup.dart';
+import 'package:EaRise/seensound/pages/profile/signin.dart';
+import 'package:EaRise/seensound/pages/profile/users_controller.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../main_page/seensound_theme.dart';
+import 'button_pages/notifications/notification_controller.dart';
+import 'button_pages/subscription.dart';
 
 class Hesabim extends StatefulWidget {
   const Hesabim({Key? key, this.animationController}) : super(key: key);
@@ -15,9 +25,17 @@ class _HesabimState extends State<Hesabim> with TickerProviderStateMixin {
   Animation<double>? topBarAnimation;
   final ScrollController scrollController = ScrollController();
   double topBarOpacity = 1.0;
+  User? _user;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final NotificationController notificationController = Get.put(NotificationController());
+  final UserController userController = Get.put(UserController());
+  String _fullName = '';
 
   @override
   void initState() {
+    super.initState();
+    _user = FirebaseAuth.instance.currentUser;
+
     topBarAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: widget.animationController!,
@@ -26,16 +44,74 @@ class _HesabimState extends State<Hesabim> with TickerProviderStateMixin {
     );
 
     addAllListData();
-    super.initState();
+  }
+
+  Future<void> _loadUserData() async {
+    if (_user != null) {
+      final userDoc = await _firestore.collection('users').doc(_user!.uid).get();
+      if (userDoc.exists) {
+        final userData = userDoc.data();
+        if (userData != null) {
+          setState(() {
+            _fullName = userData['fullName'] ?? '';
+          });
+        }
+      }
+    }
   }
 
   void addAllListData() {
+    listViews.add(
+      FutureBuilder(
+        future: _loadUserData(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return SizedBox.shrink();
+          }
+          return _user != null && !_user!.isAnonymous
+              ? Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Hoşgeldin,',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: SeenSoundTheme.darkerText,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  _fullName,
+                  style: TextStyle(
+                    fontSize: 35,
+                    fontStyle: FontStyle.italic,
+                    fontWeight: FontWeight.bold,
+                    color: SeenSoundTheme.nearlyDarkBlue,
+                  ),
+                ),
+              ],
+            ),
+          )
+              : SizedBox.shrink();
+        },
+      ),
+    );
 
     listViews.add(
       getAnimatedButton(
         icon: Icons.account_circle,
         text: 'Hesap Bilgilerim',
         animationIndex: 0,
+        onPressed: () {
+          if (_user?.isAnonymous ?? true) {
+            Get.snackbar('Giriş Yap', 'Bu bölüme erişmek için giriş yapmanız gerekmektedir.');
+          } else {
+            Get.to(() => AccountScreen());
+          }
+        },
       ),
     );
 
@@ -44,27 +120,71 @@ class _HesabimState extends State<Hesabim> with TickerProviderStateMixin {
         icon: Icons.event_note,
         text: 'Planım',
         animationIndex: 1,
+        onPressed: () {
+          if (_user?.isAnonymous ?? true) {
+            Get.snackbar('Giriş Yap', 'Bu bölüme erişmek için giriş yapmanız gerekmektedir.');
+          } else {
+            Get.to(() => Subscription());
+          }
+        },
       ),
     );
 
     listViews.add(
-      getAnimatedButton(
+      getAnimatedButtonWithNotification(
         icon: Icons.notifications,
         text: 'Bildirimler',
         animationIndex: 2,
+        onPressed: () {
+          Get.to(() => NotificationsScreen());
+        },
+        hasUnreadNotifications: notificationController.hasUnreadNotifications,
       ),
     );
 
-    listViews.add(
-      getAnimatedButton(
-        icon: Icons.exit_to_app,
-        text: 'Çıkış Yap',
-        animationIndex: 3,
-      ),
-    );
+    if (!(_user?.isAnonymous ?? true)) {
+      listViews.add(
+        getAnimatedButton(
+          icon: Icons.exit_to_app,
+          text: 'Çıkış Yap',
+          animationIndex: 3,
+          onPressed: () async {
+            await userController.logout();
+            Get.offAll(() => SignInScreen());
+          },
+        ),
+      );
+    } else {
+      listViews.add(
+        getAnimatedButton(
+          icon: Icons.login,
+          text: 'Giriş Yap',
+          animationIndex: 3,
+          onPressed: () {
+            Get.to(() => SignInScreen());
+          },
+        ),
+      );
+
+      listViews.add(
+        getAnimatedButton(
+          icon: Icons.app_registration,
+          text: 'Kayıt Ol',
+          animationIndex: 4,
+          onPressed: () {
+            Get.to(() => SignUpScreen());
+          },
+        ),
+      );
+    }
   }
 
-  Widget getAnimatedButton({required IconData icon, required String text, required int animationIndex}) {
+  Widget getAnimatedButton({
+    required IconData icon,
+    required String text,
+    required int animationIndex,
+    required VoidCallback onPressed,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: AnimatedBuilder(
@@ -74,12 +194,12 @@ class _HesabimState extends State<Hesabim> with TickerProviderStateMixin {
             opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
               CurvedAnimation(
                 parent: widget.animationController!,
-                curve: Interval((1 / 4) * animationIndex, 1.0, curve: Curves.easeInOut), // Daha yavaş ve akıcı
+                curve: Interval((1 / 4) * animationIndex, 1.0, curve: Curves.easeInOut),
               ),
             ),
             child: Transform(
               transform: Matrix4.translationValues(
-                  -MediaQuery.of(context).size.width * (1.0 - topBarAnimation!.value), 0.0, 0.0), // Ekranın en sağından başlıyor
+                  -MediaQuery.of(context).size.width * (1.0 - topBarAnimation!.value), 0.0, 0.0),
               child: Container(
                 decoration: BoxDecoration(
                   color: SeenSoundTheme.white,
@@ -102,6 +222,81 @@ class _HesabimState extends State<Hesabim> with TickerProviderStateMixin {
                       color: SeenSoundTheme.darkerText,
                     ),
                   ),
+                  onTap: onPressed,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget getAnimatedButtonWithNotification({
+    required IconData icon,
+    required String text,
+    required int animationIndex,
+    required VoidCallback onPressed,
+    required RxBool hasUnreadNotifications,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: AnimatedBuilder(
+        animation: widget.animationController!,
+        builder: (BuildContext context, Widget? child) {
+          return FadeTransition(
+            opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+              CurvedAnimation(
+                parent: widget.animationController!,
+                curve: Interval((1 / 4) * animationIndex, 1.0, curve: Curves.easeInOut),
+              ),
+            ),
+            child: Transform(
+              transform: Matrix4.translationValues(
+                  -MediaQuery.of(context).size.width * (1.0 - topBarAnimation!.value), 0.0, 0.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: SeenSoundTheme.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: SeenSoundTheme.grey.withOpacity(0.4),
+                      offset: Offset(2, 2),
+                      blurRadius: 8.0,
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    ListTile(
+                      leading: Icon(icon, color: SeenSoundTheme.nearlyDarkBlue, size: 30),
+                      title: Text(
+                        text,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 18,
+                          color: SeenSoundTheme.darkerText,
+                        ),
+                      ),
+                      onTap: onPressed,
+                    ),
+                    Positioned(
+                      right: 12,
+                      top: 12,
+                      child: Obx(() {
+                        return hasUnreadNotifications.value
+                            ? Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                        )
+                            : SizedBox.shrink();
+                      }),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -205,7 +400,7 @@ class _HesabimState extends State<Hesabim> with TickerProviderStateMixin {
                           ],
                         ),
                       ),
-                      SizedBox(height: 10), // Altına boşluk eklendi
+                      SizedBox(height: 10),
                     ],
                   ),
                 ),

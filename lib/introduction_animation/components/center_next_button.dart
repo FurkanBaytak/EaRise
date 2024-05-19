@@ -1,6 +1,9 @@
 import 'package:EaRise/seensound/pages/profile/signin.dart';
 import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
+import 'package:is_first_run/is_first_run.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // shared_preferences paketini ekledik
+import '../../seensound/main_page/seensound_home.dart';
 import '../../seensound/pages/profile/signup.dart';
 
 class CenterNextButton extends StatefulWidget {
@@ -22,10 +25,13 @@ class CenterNextButton extends StatefulWidget {
 class _CenterNextButtonState extends State<CenterNextButton> with TickerProviderStateMixin {
   late AnimationController _startAppAnimationController;
   late Animation<Offset> _startAppAnimation;
+  bool isFirstTime = true; // Uygulamanın ilk defa açılıp açılmadığını kontrol etmek için değişken ekledik
 
   @override
   void initState() {
     super.initState();
+
+    _checkFirstRun();
 
     _startAppAnimationController = AnimationController(
       duration: const Duration(milliseconds: 500),
@@ -49,6 +55,24 @@ class _CenterNextButtonState extends State<CenterNextButton> with TickerProvider
     });
   }
 
+  Future<void> _checkFirstRun() async {
+    bool firstRun = await IsFirstRun.isFirstRun();
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool? hasRunBefore = prefs.getBool('hasRunBefore');
+
+    if (hasRunBefore != null) {
+      firstRun = !hasRunBefore;
+    }
+
+    if (firstRun) {
+      await prefs.setBool('hasRunBefore', true);
+    }
+
+    setState(() {
+      isFirstTime = firstRun;
+    });
+  }
+
   @override
   void dispose() {
     _startAppAnimationController.dispose();
@@ -56,10 +80,17 @@ class _CenterNextButtonState extends State<CenterNextButton> with TickerProvider
   }
 
   //Page route to the sign up screen
-  void _onStartClick() {
+  void _onStartClick() async {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => SignInScreen()),
+    );
+  }
+
+  void _onNextClick() async {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => SeensoundHomeScreen()),
     );
   }
 
@@ -106,128 +137,183 @@ class _CenterNextButtonState extends State<CenterNextButton> with TickerProvider
                 padding: EdgeInsets.only(bottom: 38 - (38 * _signUpMoveAnimation.value)),
                 child: Column(
                   children: [
-                    // 'Uygulamaya Başla' butonu
-                    SlideTransition(
-                      position: _startAppAnimation,
-                      child: Padding(
-                        padding: EdgeInsets.only(top: 20.0), // Butonun başlangıç konumunu biraz aşağıda ayarlamak için padding ekledik
-                        child: Container(
-                          height: 68, // Boyutunu biraz büyüttük
-                          width: 68 + (220 * _signUpMoveAnimation.value), // Genişliğini biraz büyüttük
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8 + 32 * (1 - _signUpMoveAnimation.value)),
-                            color: Color(0xFFAB896D),
-                          ),
-                          child: PageTransitionSwitcher(
-                            duration: Duration(milliseconds: 480),
-                            reverse: _signUpMoveAnimation.value < 0.7,
-                            transitionBuilder: (
-                                Widget child,
-                                Animation<double> animation,
-                                Animation<double> secondaryAnimation,
-                                ) {
-                              return SharedAxisTransition(
-                                fillColor: Colors.transparent,
-                                child: child,
-                                animation: animation,
-                                secondaryAnimation: secondaryAnimation,
-                                transitionType: SharedAxisTransitionType.vertical,
-                              );
-                            },
-                            child: _signUpMoveAnimation.value > 0.7
-                                ? InkWell(
-                              key: ValueKey('Start App button'),
-                              onTap: _onStartClick,
-                              child: Padding(
-                                padding: EdgeInsets.only(left: 20.0, right: 20.0), // Padding değerlerini ayarladık
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Hemen Dene',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 20, // Font boyutunu artırdık
-                                        fontWeight: FontWeight.w500,
+                    if (isFirstTime) ...[
+                      SlideTransition(
+                        position: _startAppAnimation,
+                        child: Padding(
+                          padding: EdgeInsets.only(top: 20.0),
+                          child: Container(
+                            height: 68,
+                            width: 68 + (220 * _signUpMoveAnimation.value),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8 + 32 * (1 - _signUpMoveAnimation.value)),
+                              color: Color(0xFFAB896D),
+                            ),
+                            child: PageTransitionSwitcher(
+                              duration: Duration(milliseconds: 480),
+                              reverse: _signUpMoveAnimation.value < 0.7,
+                              transitionBuilder: (
+                                  Widget child,
+                                  Animation<double> animation,
+                                  Animation<double> secondaryAnimation,
+                                  ) {
+                                return SharedAxisTransition(
+                                  fillColor: Colors.transparent,
+                                  child: child,
+                                  animation: animation,
+                                  secondaryAnimation: secondaryAnimation,
+                                  transitionType: SharedAxisTransitionType.vertical,
+                                );
+                              },
+                              child: _signUpMoveAnimation.value > 0.7
+                                  ? InkWell(
+                                key: ValueKey('Start App button'),
+                                onTap: _onStartClick,
+                                child: Padding(
+                                  padding: EdgeInsets.only(left: 20.0, right: 20.0),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Hemen Dene',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
-                                    ),
-                                    Icon(Icons.arrow_forward_rounded, color: Colors.white),
-                                  ],
-                                ),
-                              ),
-                            )
-                                : SizedBox(),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(height: 24), // "Kayıt Ol" düğmesi ile aradaki boşluk artırıldı
-
-                    // 'Kayıt Ol' butonu
-                    Container(
-                      height: 58,
-                      width: 58 + (200 * _signUpMoveAnimation.value),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8 + 32 * (1 - _signUpMoveAnimation.value)),
-                        color: Color(0xFF567488), // "Kayıt Ol" düğmesinin rengi
-                      ),
-                      child: PageTransitionSwitcher(
-                        duration: Duration(milliseconds: 480),
-                        reverse: _signUpMoveAnimation.value < 0.7,
-                        transitionBuilder: (
-                            Widget child,
-                            Animation<double> animation,
-                            Animation<double> secondaryAnimation,
-                            ) {
-                          return SharedAxisTransition(
-                            fillColor: Colors.transparent,
-                            child: child,
-                            animation: animation,
-                            secondaryAnimation: secondaryAnimation,
-                            transitionType: SharedAxisTransitionType.vertical,
-                          );
-                        },
-                        child: _signUpMoveAnimation.value > 0.7
-                            ? InkWell(
-                          key: ValueKey('Sign Up button'),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => SignUpScreen()),
-                            );
-                          },
-                          child: Padding(
-                            padding: EdgeInsets.only(left: 16.0, right: 16.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Kayıt Ol',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w500,
+                                      Icon(Icons.arrow_forward_rounded, color: Colors.white),
+                                    ],
                                   ),
                                 ),
-                                Icon(Icons.arrow_forward_rounded, color: Colors.white),
-                              ],
+                              )
+                                  : SizedBox(),
                             ),
-                          ),
-                        )
-                            : InkWell(
-                          key: ValueKey('next button'),
-                          onTap: widget.onNextClick,
-                          child: Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: Icon(Icons.arrow_forward_ios_rounded, color: Colors.white),
                           ),
                         ),
                       ),
-                    ),
-                    SizedBox(height: 16),
-                    if (widget.animationController.value < 0.7)
+                      SizedBox(height: 24),
+                      Container(
+                        height: 58,
+                        width: 58 + (200 * _signUpMoveAnimation.value),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8 + 32 * (1 - _signUpMoveAnimation.value)),
+                          color: Color(0xFF567488),
+                        ),
+                        child: PageTransitionSwitcher(
+                          duration: Duration(milliseconds: 480),
+                          reverse: _signUpMoveAnimation.value < 0.7,
+                          transitionBuilder: (
+                              Widget child,
+                              Animation<double> animation,
+                              Animation<double> secondaryAnimation,
+                              ) {
+                            return SharedAxisTransition(
+                              fillColor: Colors.transparent,
+                              child: child,
+                              animation: animation,
+                              secondaryAnimation: secondaryAnimation,
+                              transitionType: SharedAxisTransitionType.vertical,
+                            );
+                          },
+                          child: _signUpMoveAnimation.value > 0.7
+                              ? InkWell(
+                            key: ValueKey('Sign Up button'),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => SignUpScreen()),
+                              );
+                            },
+                            child: Padding(
+                              padding: EdgeInsets.only(left: 16.0, right: 16.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Kayıt Ol',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Icon(Icons.arrow_forward_rounded, color: Colors.white),
+                                ],
+                              ),
+                            ),
+                          )
+                              : InkWell(
+                            key: ValueKey('next button'),
+                            onTap: widget.onNextClick,
+                            child: Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: Icon(Icons.arrow_forward_ios_rounded, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 16),
                       _pageView(),
+                    ] else ...[
+                      Container(
+                        height: 58,
+                        width: 58 + (200 * _signUpMoveAnimation.value),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8 + 32 * (1 - _signUpMoveAnimation.value)),
+                          color: Color(0xFFAB896D),
+                        ),
+                        child: PageTransitionSwitcher(
+                          duration: Duration(milliseconds: 480),
+                          reverse: _signUpMoveAnimation.value < 0.7,
+                          transitionBuilder: (
+                              Widget child,
+                              Animation<double> animation,
+                              Animation<double> secondaryAnimation,
+                              ) {
+                            return SharedAxisTransition(
+                              fillColor: Colors.transparent,
+                              child: child,
+                              animation: animation,
+                              secondaryAnimation: secondaryAnimation,
+                              transitionType: SharedAxisTransitionType.vertical,
+                            );
+                          },
+                          child: _signUpMoveAnimation.value > 0.7
+                              ? InkWell(
+                            key: ValueKey('Start App button'),
+                            onTap: _onNextClick,
+                            child: Padding(
+                              padding: EdgeInsets.only(left: 16.0, right: 16.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Devam Et',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Icon(Icons.arrow_forward_rounded, color: Colors.white),
+                                ],
+                              ),
+                            ),
+                          )
+                              : InkWell(
+                            key: ValueKey('next button'),
+                            onTap: widget.onNextClick,
+                            child: Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: Icon(Icons.arrow_forward_ios_rounded, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      _pageView(),
+                    ],
                   ],
                 ),
               ),
