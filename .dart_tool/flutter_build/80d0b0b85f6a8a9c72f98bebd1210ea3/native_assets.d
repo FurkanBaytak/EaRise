@@ -1,0 +1,1 @@
+ C:\\Users\\Lenovo\\Desktop\\EaRise-main\\.dart_tool\\flutter_build\\80d0b0b85f6a8a9c72f98bebd1210ea3\\native_assets.yaml: 
