@@ -7,12 +7,25 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:908398964305:android:681b3a337cfec5a2ff1270",
+        "mobilesdk_app_id": "1:908398964305:android:76422521d1a3beedff1270",
         "android_client_info": {
-          "package_name": "com.example.EaRise"
+          "package_name": "com.gencbizz.EaRise"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "908398964305-4fdmjhavnsfcmjibq550abvnvfkbmutc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gencbizz.EaRise",
+            "certificate_hash": "a1a44c21fad886d1bd88c4b09e432c94d1354a37"
+          }
+        },
+        {
+          "client_id": "908398964305-9mssajcldj68uu1cls6vccq95qi98442.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyD-9MXriTmGqIfIjbFUWvOPF1723gYXoK8"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "908398964305-9mssajcldj68uu1cls6vccq95qi98442.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../../main_page/seensound_home.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({Key? key}) : super(key: key);
@@ -127,6 +130,50 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+  Future<void> _deleteAccount() async {
+    Get.defaultDialog(
+      title: 'Hesabı Sil',
+      middleText: 'Hesabınızı silmek istediğinizden emin misiniz?',
+      confirm: ElevatedButton(
+        onPressed: () async {
+          try {
+            // Delete user data from Firestore
+            await _firestore.collection('users').doc(_user!.uid).delete();
+            // Delete user authentication
+            await _user!.delete();
+            Get.back();
+            Get.snackbar('Başarılı', 'Hesap başarıyla silindi.');
+            // Open the URL
+            final Uri uri = Uri.parse('https://earisegencbizz.com.tr/delete_complete');
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri);
+            } else {
+              throw 'Could not launch $uri';
+            }
+          } catch (e) {
+            Get.snackbar('Hata', e.toString());
+          }
+        },
+        child: Text('Evet'),
+      ),
+      cancel: TextButton(
+        onPressed: () {
+          Get.back();
+        },
+        child: Text('Hayır'),
+      ),
+    );
+  }
+
+  Future<void> _openPrivacyPolicy() async {
+    final Uri uri = Uri.parse('https://earisegencbizz.com.tr/privacy_policy/');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      throw 'Could not launch $uri';
+    }
+  }
+
   Widget buildTextField(TextEditingController controller, String labelText, {bool enabled = true}) {
     return Container(
       decoration: BoxDecoration(
@@ -226,6 +273,28 @@ class _AccountScreenState extends State<AccountScreen> {
                       padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
                     ),
                     child: Text('Şifre Değiştir', style: TextStyle(fontSize: 18, color: Colors.white)),
+                  ),
+                ),
+                SizedBox(height: 16),
+                Center(
+                  child: ElevatedButton(
+                    onPressed: _deleteAccount,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                      padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                    ),
+                    child: Text('Hesabı Sil', style: TextStyle(fontSize: 18, color: Colors.white)),
+                  ),
+                ),
+                SizedBox(height: 16),
+                Center(
+                  child: ElevatedButton(
+                    onPressed: _openPrivacyPolicy,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                    ),
+                    child: Text('Gizlilik Politikası', style: TextStyle(fontSize: 18, color: Colors.white)),
                   ),
                 ),
               ],

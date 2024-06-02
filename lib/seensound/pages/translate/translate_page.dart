@@ -137,7 +137,7 @@ class _TranslatePageState extends State<TranslatePage> with TickerProviderStateM
   }
 
   Future<void> _playVideoSequence(List<String> words) async {
-    int maxWords = 2;
+    int maxWords = 3;
     for (int i = 0; i < words.length; i++) {
       for (int j = maxWords; j > 0; j--) {
         if (i + j <= words.length) {

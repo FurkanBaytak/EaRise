@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="gcm_defaultSenderId" translatable="false">908398964305</string>
-    <string name="google_api_key" translatable="false">AIzaSyD-9MXriTmGqIfIjbFUWvOPF1723gYXoK8</string>
-    <string name="google_app_id" translatable="false">1:908398964305:android:681b3a337cfec5a2ff1270</string>
-    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyD-9MXriTmGqIfIjbFUWvOPF1723gYXoK8</string>
-    <string name="google_storage_bucket" translatable="false">earise-4671d.appspot.com</string>
-    <string name="project_id" translatable="false">earise-4671d</string>
-</resources>
